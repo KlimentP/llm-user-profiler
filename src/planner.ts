@@ -6,7 +6,10 @@ import { callLLM } from "./llm";
 
 const PLAN_FILE = "analysis_plan.md";
 
-export async function generatePlan(config: Config): Promise<string> {
+export async function generatePlan(
+	config: Config,
+	customFilename?: string,
+): Promise<string> {
 	if (!config.databaseUrl) {
 		throw new Error(
 			"DATABASE_URL is required for planning phase. Provide during setup or add to .env file.",
@@ -86,7 +89,8 @@ Format your response as a well-structured markdown document.`;
 	// Ensure output directory exists
 	await fs.mkdir(config.outputDir, { recursive: true });
 
-	const planPath = path.join(config.outputDir, PLAN_FILE);
+	const filename = customFilename || PLAN_FILE;
+	const planPath = path.join(config.outputDir, filename);
 	await fs.writeFile(planPath, planContent, "utf-8");
 
 	console.log(`✅ Analysis plan saved to: ${planPath}`);

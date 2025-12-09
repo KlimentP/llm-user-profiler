@@ -16,14 +16,15 @@ interface QueryResult {
 	data: any[];
 }
 
-export async function executePlan(config: Config): Promise<string> {
+export async function executePlan(
+	config: Config,
+	planPath: string,
+): Promise<string> {
 	if (!config.databaseUrl) {
 		throw new Error(
 			"DATABASE_URL is required for execution phase. Provide during setup or add to .env file.",
 		);
 	}
-
-	const planPath = path.join(config.outputDir, PLAN_FILE);
 
 	console.log(`📄 Reading plan from: ${planPath}`);
 	const planContent = await fs.readFile(planPath, "utf-8");
@@ -53,7 +54,15 @@ export async function executePlan(config: Config): Promise<string> {
 		}
 	}
 
-	const resultsPath = path.join(config.outputDir, INTERIM_RESULTS_FILE);
+	// Create interim_results subdirectory
+	const interimDir = path.join(config.outputDir, "interim_results");
+	await fs.mkdir(interimDir, { recursive: true });
+
+	// Create timestamped filename
+	const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+	const resultsFilename = `interim_results_${timestamp}.json`;
+	const resultsPath = path.join(interimDir, resultsFilename);
+
 	await fs.writeFile(resultsPath, JSON.stringify(results, null, 2), "utf-8");
 
 	console.log(`\n✅ Interim results saved to: ${resultsPath}`);

@@ -8,27 +8,32 @@ import type { Config } from "../../config.js";
 
 interface ExecutionPhaseProps {
 	config: Config;
-	onComplete: () => void;
+	planPath: string;
+	onComplete: (resultsPath: string) => void;
 }
 
-export const ExecutionPhase = ({ config, onComplete }: ExecutionPhaseProps) => {
+export const ExecutionPhase = ({
+	config,
+	planPath,
+	onComplete,
+}: ExecutionPhaseProps) => {
 	const [executing, setExecuting] = useState(true);
 	const [error, setError] = useState<string>();
 
 	useEffect(() => {
-		executePlan(config)
-			.then(() => {
+		executePlan(config, planPath)
+			.then((resultsPath) => {
 				setExecuting(false);
 				// Auto-advance after a brief moment
 				setTimeout(() => {
-					onComplete();
+					onComplete(resultsPath);
 				}, 1500);
 			})
 			.catch((err) => {
 				setError(err.message);
 				setExecuting(false);
 			});
-	}, [config, onComplete]);
+	}, [config, planPath, onComplete]);
 
 	if (error) {
 		return (

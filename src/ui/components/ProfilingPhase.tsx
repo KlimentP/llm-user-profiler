@@ -8,15 +8,22 @@ import type { Config } from "../../config.js";
 
 interface ProfilingPhaseProps {
 	config: Config;
+	planPath: string;
+	interimResultsPath: string;
 	onComplete: () => void;
 }
 
-export const ProfilingPhase = ({ config, onComplete }: ProfilingPhaseProps) => {
+export const ProfilingPhase = ({
+	config,
+	planPath,
+	interimResultsPath,
+	onComplete,
+}: ProfilingPhaseProps) => {
 	const [profiling, setProfiling] = useState(true);
 	const [error, setError] = useState<string>();
 
 	useEffect(() => {
-		generateProfiles(config)
+		generateProfiles(config, interimResultsPath, planPath)
 			.then(() => {
 				setProfiling(false);
 				// Auto-advance after a brief moment
@@ -28,7 +35,7 @@ export const ProfilingPhase = ({ config, onComplete }: ProfilingPhaseProps) => {
 				setError(err.message);
 				setProfiling(false);
 			});
-	}, [config, onComplete]);
+	}, [config, planPath, interimResultsPath, onComplete]);
 
 	if (error) {
 		return (

@@ -7,12 +7,13 @@ const INTERIM_RESULTS_FILE = "interim_results.json";
 const PLAN_FILE = "analysis_plan.md";
 const USER_PROFILES_FILE = "user_profiles.json";
 
-export async function generateProfiles(config: Config): Promise<string> {
-	const interimPath = path.join(config.outputDir, INTERIM_RESULTS_FILE);
-	const planPath = path.join(config.outputDir, PLAN_FILE);
-
-	console.log(`📄 Reading interim results from: ${interimPath}`);
-	const interimContent = await fs.readFile(interimPath, "utf-8");
+export async function generateProfiles(
+	config: Config,
+	interimResultsPath: string,
+	planPath: string,
+): Promise<string> {
+	console.log(`📄 Reading interim results from: ${interimResultsPath}`);
+	const interimContent = await fs.readFile(interimResultsPath, "utf-8");
 	const interimData = JSON.parse(interimContent);
 
 	console.log(`📄 Reading analysis plan from: ${planPath}`);

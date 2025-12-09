@@ -28,9 +28,13 @@ export const PlanningPhase = ({
 	const [planPath, setPlanPath] = useState<string | undefined>(existingPlan);
 	const [error, setError] = useState<string>();
 
+	const [targetFilename, setTargetFilename] = useState<string | undefined>(
+		undefined,
+	);
+
 	useEffect(() => {
 		if (state === "generating") {
-			generatePlan(config)
+			generatePlan(config, targetFilename)
 				.then((path) => {
 					setPlanPath(path);
 					setState("reviewing");
@@ -39,12 +43,17 @@ export const PlanningPhase = ({
 					setError(err.message);
 				});
 		}
-	}, [state, config]);
+	}, [state, config, targetFilename]);
 
 	const handleChoice = (item: { value: string }) => {
 		if (item.value === "use-existing") {
 			setState("reviewing");
-		} else if (item.value === "generate-new") {
+		} else if (item.value === "overwrite") {
+			setTargetFilename(undefined); // Default to analysis_plan.md
+			setState("generating");
+		} else if (item.value === "generate-new-version") {
+			const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+			setTargetFilename(`analysis_plan_${timestamp}.md`);
 			setState("generating");
 		}
 	};
@@ -96,7 +105,11 @@ export const PlanningPhase = ({
 					<SelectInput
 						items={[
 							{ label: "✅ Use Existing Plan", value: "use-existing" },
-							{ label: "🔄 Generate New Plan", value: "generate-new" },
+							{ label: "⚠️  Overwrite Existing Plan", value: "overwrite" },
+							{
+								label: "➕ Generate New Ver. (Timestamped)",
+								value: "generate-new-version",
+							},
 						]}
 						onSelect={handleChoice}
 					/>
@@ -114,6 +127,9 @@ export const PlanningPhase = ({
 						<Text>🔍 Introspecting database schema</Text>
 						<Text>🧠 Using LLM to generate analysis strategy</Text>
 						<Text>📝 Creating SQL queries and profile structure</Text>
+						{targetFilename && (
+							<Text color="yellow">💾 Saving to: {targetFilename}</Text>
+						)}
 					</InfoBox>
 				</Box>
 			)}

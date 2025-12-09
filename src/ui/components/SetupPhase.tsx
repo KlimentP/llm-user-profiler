@@ -137,11 +137,14 @@ export const SetupPhase = ({
 			{step === "outputDir" && (
 				<InfoBox title="Step 1: Output Directory">
 					<Text color="gray">
-						Enter the project path where the llm-user-profiler/ folder will be
-						created.
+						Enter the path of the project you want to analyze created.
 					</Text>
 					<Text color="gray" dimColor>
-						Press Enter to use the current directory.
+						The CLI will create a llm-user-profiler/ folder in this directory
+						and may retrieve variables from the .env there.
+					</Text>
+					<Text color="gray" dimColor>
+						Pressing Enter will default to the current directory.
 					</Text>
 					<Box marginTop={1}>
 						<Text color="cyan">Path: </Text>

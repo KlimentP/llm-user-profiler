@@ -24,6 +24,9 @@ export const App = () => {
 	const [phase, setPhase] = useState<Phase>("setup");
 	const [config, setConfig] = useState<Config | null>(null);
 	const [planPath, setPlanPath] = useState<string | undefined>(undefined);
+	const [interimResultsPath, setInterimResultsPath] = useState<
+		string | undefined
+	>(undefined);
 	const [existingPlan, setExistingPlan] = useState<string | undefined>(
 		undefined,
 	);
@@ -63,6 +66,10 @@ export const App = () => {
 			if (skipToPhase === "execution" && existingPlan) {
 				setPlanPath(existingPlan);
 			}
+			if (skipToPhase === "profiling") {
+				if (existingPlan) setPlanPath(existingPlan);
+				if (existingInterim) setInterimResultsPath(existingInterim);
+			}
 			setPhase(skipToPhase);
 		} else {
 			setPhase("planning");
@@ -74,7 +81,8 @@ export const App = () => {
 		setPhase("execution");
 	};
 
-	const handleExecutionComplete = () => {
+	const handleExecutionComplete = (resultsPath: string) => {
+		setInterimResultsPath(resultsPath);
 		setPhase("profiling");
 	};
 
@@ -122,11 +130,20 @@ export const App = () => {
 			)}
 
 			{phase === "execution" && config && planPath && (
-				<ExecutionPhase config={config} onComplete={handleExecutionComplete} />
+				<ExecutionPhase
+					config={config}
+					planPath={planPath}
+					onComplete={handleExecutionComplete}
+				/>
 			)}
 
-			{phase === "profiling" && config && (
-				<ProfilingPhase config={config} onComplete={handleProfilingComplete} />
+			{phase === "profiling" && config && planPath && interimResultsPath && (
+				<ProfilingPhase
+					config={config}
+					planPath={planPath}
+					interimResultsPath={interimResultsPath}
+					onComplete={handleProfilingComplete}
+				/>
 			)}
 
 			{phase === "complete" && config && (
