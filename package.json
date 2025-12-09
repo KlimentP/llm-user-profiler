@@ -1,35 +1,35 @@
 {
-  "name": "llm-user-profiler",
-  "module": "cli.tsx",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "start": "bun run cli.tsx",
-    "dev": "bun run cli.tsx",
-    "demo": "bun run demo.tsx"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/gradient-string": "^1.1.6",
-    "@types/pg": "^8.15.6",
-    "@types/react": "^19.2.7"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "@openrouter/ai-sdk-provider": "^1.4.1",
-    "ai": "^5.0.108",
-    "chalk": "^5.6.2",
-    "dotenv": "^17.2.3",
-    "gradient-string": "^3.0.0",
-    "ink": "^6.5.1",
-    "ink-big-text": "^2.0.0",
-    "ink-gradient": "^3.0.0",
-    "ink-select-input": "^6.2.0",
-    "ink-spinner": "^5.0.0",
-    "ink-text-input": "^6.0.0",
-    "pg": "^8.16.3",
-    "react": "^19.2.1"
-  }
+	"name": "llm-user-profiler",
+	"module": "cli.tsx",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start": "bun run cli.tsx",
+		"dev": "bun run cli.tsx",
+		"demo": "bun run demo.tsx"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/gradient-string": "^1.1.6",
+		"@types/pg": "^8.15.6",
+		"@types/react": "^19.2.7"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@openrouter/ai-sdk-provider": "^1.4.1",
+		"ai": "^5.0.108",
+		"chalk": "^5.6.2",
+		"dotenv": "^17.2.3",
+		"gradient-string": "^3.0.0",
+		"ink": "^6.5.1",
+		"ink-big-text": "^2.0.0",
+		"ink-gradient": "^3.0.0",
+		"ink-select-input": "^6.2.0",
+		"ink-spinner": "^5.0.0",
+		"ink-text-input": "^6.0.0",
+		"pg": "^8.16.3",
+		"react": "^19.2.1"
+	}
 }

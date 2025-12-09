@@ -7,36 +7,38 @@ import { callLLM } from "./llm";
 const PLAN_FILE = "analysis_plan.md";
 
 export async function generatePlan(config: Config): Promise<string> {
-  if (!config.databaseUrl) {
-    throw new Error("DATABASE_URL is required for planning phase. Provide during setup or add to .env file.");
-  }
+	if (!config.databaseUrl) {
+		throw new Error(
+			"DATABASE_URL is required for planning phase. Provide during setup or add to .env file.",
+		);
+	}
 
-  console.log("🔍 Introspecting database schema...");
-  const tables = await introspectDatabase(config.databaseUrl);
+	console.log("🔍 Introspecting database schema...");
+	const tables = await introspectDatabase(config.databaseUrl);
 
-  console.log(`📊 Found ${tables.length} tables`);
+	console.log(`📊 Found ${tables.length} tables`);
 
-  // Read optional context file
-  let contextContent = "";
-  if (config.contextPath) {
-    try {
-      contextContent = await fs.readFile(config.contextPath, "utf-8");
-      console.log("📖 Loaded context document");
-    } catch {
-      console.warn(`⚠️  Could not read context file: ${config.contextPath}`);
-    }
-  }
+	// Read optional context file
+	let contextContent = "";
+	if (config.contextPath) {
+		try {
+			contextContent = await fs.readFile(config.contextPath, "utf-8");
+			console.log("📖 Loaded context document");
+		} catch {
+			console.warn(`⚠️  Could not read context file: ${config.contextPath}`);
+		}
+	}
 
-  // Build schema description for LLM
-  const schemaDescription = formatSchemaForLLM(tables);
+	// Build schema description for LLM
+	const schemaDescription = formatSchemaForLLM(tables);
 
-  const systemPrompt = `You are a data analyst specialized in user profiling and behavioral analysis.
+	const systemPrompt = `You are a data analyst specialized in user profiling and behavioral analysis.
 Your task is to analyze database schemas and create comprehensive SQL-based analysis plans.
 If PostHog is available, you also leverage behavioral data from it.`;
 
-  let postHogContext = "";
-  if (config.posthogApiKey && config.posthogProjectId) {
-    postHogContext = `
+	let postHogContext = "";
+	if (config.posthogApiKey && config.posthogProjectId) {
+		postHogContext = `
 ## PostHog Data Access
 You have access to PostHog data via HogQL.
 The main table is 'events' which has columns like 'event', 'timestamp', 'properties' (JSON), 'person_id'.
@@ -51,9 +53,9 @@ Example:
 select properties.$current_url, count() from events where timestamp > now() - interval 7 day group by 1 order by 2 desc limit 10
 \`\`\`
 `;
-  }
+	}
 
-  const userPrompt = `I need to profile users based on their database activity. Here is the database schema:
+	const userPrompt = `I need to profile users based on their database activity. Here is the database schema:
 
 ${schemaDescription}
 
@@ -78,37 +80,42 @@ ${postHogContext ? "5" : "4"}. **User Profile Structure**: Define the JSON schem
 
 Format your response as a well-structured markdown document.`;
 
-  console.log("🤖 Generating analysis plan with LLM...");
-  const planContent = await callLLM(config, systemPrompt, userPrompt);
+	console.log("🤖 Generating analysis plan with LLM...");
+	const planContent = await callLLM(config, systemPrompt, userPrompt);
 
-  // Ensure output directory exists
-  await fs.mkdir(config.outputDir, { recursive: true });
+	// Ensure output directory exists
+	await fs.mkdir(config.outputDir, { recursive: true });
 
-  const planPath = path.join(config.outputDir, PLAN_FILE);
-  await fs.writeFile(planPath, planContent, "utf-8");
+	const planPath = path.join(config.outputDir, PLAN_FILE);
+	await fs.writeFile(planPath, planContent, "utf-8");
 
-  console.log(`✅ Analysis plan saved to: ${planPath}`);
-  return planPath;
+	console.log(`✅ Analysis plan saved to: ${planPath}`);
+	return planPath;
 }
 
 function formatSchemaForLLM(tables: TableInfo[]): string {
-  return tables
-    .map((table) => {
-      const columns = table.columns
-        .map((col) => `  - ${col.columnName} (${col.dataType}, ${col.isNullable === "YES" ? "nullable" : "not null"})`)
-        .join("\n");
-      return `### Table: ${table.tableName}\n${columns}`;
-    })
-    .join("\n\n");
+	return tables
+		.map((table) => {
+			const columns = table.columns
+				.map(
+					(col) =>
+						`  - ${col.columnName} (${col.dataType}, ${col.isNullable === "YES" ? "nullable" : "not null"})`,
+				)
+				.join("\n");
+			return `### Table: ${table.tableName}\n${columns}`;
+		})
+		.join("\n\n");
 }
 
-export async function checkExistingPlan(config: Config): Promise<string | null> {
-  const planPath = path.join(config.outputDir, PLAN_FILE);
-  
-  try {
-    await fs.access(planPath);
-    return planPath;
-  } catch {
-    return null;
-  }
+export async function checkExistingPlan(
+	config: Config,
+): Promise<string | null> {
+	const planPath = path.join(config.outputDir, PLAN_FILE);
+
+	try {
+		await fs.access(planPath);
+		return planPath;
+	} catch {
+		return null;
+	}
 }

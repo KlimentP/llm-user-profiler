@@ -1,97 +1,69 @@
-# 🎨 LLM User Profiler - Beautiful CLI Edition
+# LLM User Profiler CLI
 
-A stunning, interactive CLI application built with **Ink.js** for profiling users based on their database activities.
+A Command Line Interface tool that leverages Large Language Models (LLMs) to generate detailed user profiles by analyzing data from your PostgreSQL database and PostHog events.
 
-## ✨ Features
+## 📖 How It Works
 
-- 🌈 **Beautiful UI** with gradients, colors, and animations
-- 🎯 **Interactive Menus** for easy navigation
-- ⚡ **Phase-based Workflow** with visual progress indicators
-- 🔄 **Resume Capability** - pick up where you left off
-- 📊 **Real-time Feedback** with spinners and status updates
+The tool operates in a three-phase workflow designed to provide transparency and control over the profiling process:
+
+### 1. Planning Phase (`src/planner.ts`)
+The tool starts by understanding your data structure to create a tailored analysis strategy.
+-   **Introspection**: It connects to your PostgreSQL database and introspects the public schema to understand available tables and columns.
+-   **Context Loading**: Optional markdown context files can be provided to give the LLM domain-specific knowledge.
+-   **Plan Generation**: Using the schema and context, the LLM generates an **Analysis Plan** (`analysis_plan.md`). This plan contains:
+    -   Analysis goals and specific metrics to extract.
+    -   **SQL Queries**: Executable SQL queries targeted at your Postgres database.
+    -   **HogQL Queries**: (If configured) Queries for fetching behavioral data from PostHog.
+    -   **Profile Schema**: A JSON structure definition for the final user profile.
+-   **Review**: You have the opportunity to review and modify the generated plan before execution.
+
+### 2. Execution Phase (`src/executor.ts`)
+The tool executes the approved plan to gather raw data.
+-   **Query Parsing**: It extracts the `sql` and `hogql` code blocks from the analysis plan.
+-   **Execution**:
+    -   SQL queries are run against the configured PostgreSQL database.
+    -   HogQL queries are sent to the PostHog API.
+-   **Data Aggregation**: Results from all queries are aggregated and saved to `interim_results.json`. This serves as the raw data layer for the profiling phase.
+
+### 3. Profiling Phase (`src/profiler.ts`)
+The final phase synthesizes the data into human-readable profiles.
+-   **Synthesis**: The LLM is fed the `analysis_plan.md` (for context/definitions) and `interim_results.json` (the data).
+-   **Generation**: It generates a JSON file (`user_profiles.json`) containing rich user profiles. These profiles combine:
+    -   **Hard metrics**: Direct values from the database (e.g., "created 5 projects").
+    -   **Inferred Insights**: Qualitative analysis derived from patterns in the data (e.g., "high engagement user", "churn risk").
 
 ## 🚀 Quick Start
+
+### Prerequisites
+-   Bun runtime
+-   Access to an LLM API (via OpenRouter)
+-   PostgreSQL connection string
+-   (Optional) PostHog API Key & Project ID
+
+### Installation
 
 ```bash
 # Install dependencies
 bun install
-
-# Run the beautiful CLI
-bun start
-
-# Or use the old CLI (plain text)
-bun run old
 ```
 
-## 🎭 Usage
+### Running the Tool
 
 ```bash
-# With options
-bun start --api-key YOUR_KEY --model gemini-2.5-flash --pg-connection "postgresql://..."
-
-# With environment variables
-export OPENROUTER_API_KEY=your_key
-export PG_CONNECTION_STRING="postgresql://..."
 bun start
 ```
 
-## 📋 Workflow Phases
+The CLI acts as an interactive wizard (using **Ink.js**) that guides you through the configuration and the three phases described above.
 
-### 1. 🏠 Welcome Screen
-- Choose to start fresh, use existing plan, or resume from profiling
-- Beautiful configuration display
-- Smart detection of existing work
+## ⚙️ Configuration
 
-### 2. 📝 Planning Phase  
-- Database schema introspection
-- LLM-powered analysis plan generation
-- Interactive review and approval
+You can configure the tool interactively or by setting environment variables in a `.env` file in your output directory:
 
-### 3. ⚙️ Execution Phase
-- SQL query execution
-- Progress indicators
-- Interim results saved automatically
-
-### 4. 🧠 Profiling Phase
-- LLM-based user profile generation
-- Qualitative insights extraction
-- Structured JSON output
-
-### 5. 🎉 Completion
-- Success celebration
-- File summary
-- Auto-exit with countdown
-
-## 🎨 UI Components
-
-The CLI uses several beautiful components:
-
-- **Gradient Text** - Rainbow and themed gradients
-- **Big Text** - ASCII art titles
-- **Info Boxes** - Bordered, colored information displays
-- **Spinners** - Animated loading indicators
-- **Select Inputs** - Interactive menu selections
-- **Progress Indicators** - Phase-by-phase visual feedback
-
-## 📦 Tech Stack
-
-- **Bun** - Fast JavaScript runtime
-- **TypeScript** - Type-safe code
-- **Ink** - React for CLIs
-- **ink-gradient** - Beautiful gradient text
-- **ink-big-text** - ASCII art titles
-- **ink-spinner** - Loading animations
-- **ink-select-input** - Interactive menus
-- **PostgreSQL** - Database connection
-- **OpenRouter** - LLM API access
-
-## 🎯 Output Files
-
-All files are saved to `./llm-user-profiler/`:
-
-- `analysis_plan.md` - Generated analysis strategy
-- `interim_results.json` - SQL query results
-- `user_profiles.json` - Final user profiles
+-   `OPENROUTER_API_KEY`: Required for LLM access.
+-   `DATABASE_URL`: PostgreSQL connection string (e.g., `postgresql://user:pass@localhost:5432/dbname`).
+-   `POSTHOG_API_KEY`: (Optional) For PostHog integration.
+-   `POSTHOG_PROJECT_ID`: (Optional) PostHog Project ID.
+-   `POSTHOG_HOST`: (Optional) Defaults to `https://eu.i.posthog.com` (change to us for 🇺🇸🦅).
 
 ## 🛠️ Development
 
@@ -99,36 +71,14 @@ All files are saved to `./llm-user-profiler/`:
 # Run in development mode
 bun dev
 
-# Type checking
+# Type check
 bun tsc --noEmit
 ```
 
-## 🌟 Why Ink.js?
+## 📂 Output Files
 
-Ink brings the power of React to the terminal:
-- ✅ Component-based architecture
-- ✅ State management with hooks
-- ✅ Beautiful, responsive UIs
-- ✅ Easy to test and maintain
-- ✅ Rich ecosystem of components
+All artifacts are generated in your specified output directory:
 
-## 📸 Screenshots
-
-The CLI features:
-- 🌈 Rainbow gradient titles
-- 💫 Smooth animations
-- 🎨 Color-coded phases
-- 📦 Bordered information boxes
-- ⚡ Real-time progress updates
-
-## 🤝 Contributing
-
-Feel free to enhance the UI with more Ink components or improve the user experience!
-
-## 📄 License
-
-MIT
-
----
-
-**Made with ❤️ using Ink.js** - Because CLIs deserve to be beautiful too!
+-   `analysis_plan.md`: The strategy and queries generated by the LLM.
+-   `interim_results.json`: The raw data fetched from your data sources.
+-   `user_profiles.json`: The final, detailed user profiles in JSON format.
