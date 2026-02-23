@@ -4,13 +4,23 @@ import Gradient from "ink-gradient";
 import BigText from "ink-big-text";
 import { InfoBox } from "./InfoBox.tsx";
 import type { Config } from "../../config.js";
+import type { ExecutionMode } from "../../executor.js";
 
 interface CompletionScreenProps {
 	config: Config;
+	planPath?: string;
+	interimResultsPath?: string;
+	executionMode?: ExecutionMode;
 	onExit: () => void;
 }
 
-export const CompletionScreen = ({ config, onExit }: CompletionScreenProps) => {
+export const CompletionScreen = ({
+	config,
+	planPath,
+	interimResultsPath,
+	executionMode,
+	onExit,
+}: CompletionScreenProps) => {
 	useEffect(() => {
 		// Auto-exit after 5 seconds
 		const timer = setTimeout(() => {
@@ -45,9 +55,15 @@ export const CompletionScreen = ({ config, onExit }: CompletionScreenProps) => {
 					<Text bold color="cyan">
 						📊 Generated Files:
 					</Text>
-					<Text> 📋 {config.outputDir}/analysis_plan.md</Text>
-					<Text> 💾 {config.outputDir}/interim_results.json</Text>
+					<Text> 📋 {planPath || `${config.outputDir}/analysis_plan.md`}</Text>
+					<Text>
+						{" "}
+						💾{" "}
+						{interimResultsPath ||
+							`${config.outputDir}/interim_results/interim_results_<timestamp>.json`}
+					</Text>
 					<Text> 👥 {config.outputDir}/user_profiles.json</Text>
+					{executionMode && <Text> ⚙️ Execution Mode: {executionMode}</Text>}
 				</Box>
 			</Box>
 

@@ -5,24 +5,31 @@ import Gradient from "ink-gradient";
 import { InfoBox } from "./InfoBox.tsx";
 import { executePlan } from "../../executor.js";
 import type { Config } from "../../config.js";
+import type { ExecutionMode } from "../../executor.js";
 
 interface ExecutionPhaseProps {
 	config: Config;
 	planPath: string;
+	executionMode: ExecutionMode;
 	onComplete: (resultsPath: string) => void;
 }
 
 export const ExecutionPhase = ({
 	config,
 	planPath,
+	executionMode,
 	onComplete,
 }: ExecutionPhaseProps) => {
 	const [executing, setExecuting] = useState(true);
+	const [completedResultsPath, setCompletedResultsPath] = useState<
+		string | undefined
+	>(undefined);
 	const [error, setError] = useState<string>();
 
 	useEffect(() => {
-		executePlan(config, planPath)
+		executePlan(config, planPath, { mode: executionMode })
 			.then((resultsPath) => {
+				setCompletedResultsPath(resultsPath);
 				setExecuting(false);
 				// Auto-advance after a brief moment
 				setTimeout(() => {
@@ -33,7 +40,7 @@ export const ExecutionPhase = ({
 				setError(err.message);
 				setExecuting(false);
 			});
-	}, [config, planPath, onComplete]);
+	}, [config, planPath, executionMode, onComplete]);
 
 	if (error) {
 		return (
@@ -64,18 +71,18 @@ export const ExecutionPhase = ({
 				</Gradient>
 			</Box>
 
-			{executing ? (
-				<Box flexDirection="column" gap={1}>
+				{executing ? (
+					<Box flexDirection="column" gap={1}>
 					<Box>
 						<Text color="cyan">
-							<Spinner type="arc" /> Executing SQL queries...
+							<Spinner type="arc" /> Executing {executionMode} plan queries...
 						</Text>
 					</Box>
 
 					<InfoBox title="Processing">
 						<Text>📊 Parsing analysis plan</Text>
 						<Text>🗄️ Connecting to database</Text>
-						<Text>🔍 Running SQL queries</Text>
+						<Text>🔍 Running SQL/HogQL queries</Text>
 						<Text>💾 Saving interim results</Text>
 					</InfoBox>
 
@@ -86,18 +93,23 @@ export const ExecutionPhase = ({
 						padding={1}
 					>
 						<Text dimColor>
-							💡 Tip: Results will be saved to interim_results.json
+							💡 Tip: Results are saved in the {config.outputDir}
+							/interim_results folder
 						</Text>
 					</Box>
-				</Box>
-			) : (
-				<Box flexDirection="column" gap={1}>
+					</Box>
+				) : (
+					<Box flexDirection="column" gap={1}>
 					<Box borderStyle="round" borderColor="green" padding={1}>
 						<Text color="green">✅ Execution complete!</Text>
 					</Box>
 
 					<InfoBox title="Results Saved" color="green">
-						<Text>📁 {config.outputDir}/interim_results.json</Text>
+						<Text>
+							📁{" "}
+							{completedResultsPath ||
+								`${config.outputDir}/interim_results/interim_results_<timestamp>.json`}
+						</Text>
 					</InfoBox>
 
 					<Box>
@@ -105,8 +117,8 @@ export const ExecutionPhase = ({
 							<Spinner type="dots" /> Moving to profiling phase...
 						</Text>
 					</Box>
-				</Box>
-			)}
+					</Box>
+				)}
 		</Box>
 	);
 };

@@ -5,7 +5,7 @@ const DEFAULT_HOST = "https://eu.i.posthog.com";
 export async function executePostHogQuery(
 	config: Config,
 	query: string,
-): Promise<any[]> {
+): Promise<unknown[]> {
 	if (!config.posthogApiKey || !config.posthogProjectId) {
 		throw new Error(
 			"PostHog API Key and Project ID are required for PostHog queries.",
@@ -34,20 +34,26 @@ export async function executePostHogQuery(
 		throw new Error(`PostHog API Error (${response.status}): ${text}`);
 	}
 
-	const data = await response.json();
+	const data = (await response.json()) as {
+		results?: unknown;
+		columns?: unknown;
+		[key: string]: unknown;
+	};
 	// PostHog returns results in a specific format (columns + results array of arrays) generally for SQL-like queries
 	// but HogQL query response might vary. The docs say response has `results` and `columns` or similar.
 	// Let's assume standard HogQL response structure.
 
-	if (data.results && Array.isArray(data.results)) {
+	if (Array.isArray(data.results)) {
 		// If columns provided, map to objects?
 		// SQL output usually is array of arrays.
 		// For profiling, objects are better.
-		if (data.columns && Array.isArray(data.columns)) {
-			return data.results.map((row: any[]) => {
-				const obj: Record<string, any> = {};
-				data.columns.forEach((col: string, i: number) => {
-					obj[col] = row[i];
+		const columns = data.columns;
+		if (Array.isArray(columns)) {
+			return data.results.map((row) => {
+				const rowValues = Array.isArray(row) ? row : [row];
+				const obj: Record<string, unknown> = {};
+				columns.forEach((col: unknown, i: number) => {
+					obj[String(col)] = rowValues[i];
 				});
 				return obj;
 			});

@@ -26,8 +26,8 @@ ${Object.entries(MODELS)
 
 Workflow:
   1. Planning:   Introspect DB → Generate analysis_plan.md → User review
-  2. Execution:  Parse SQL queries → Execute → Save interim_results.json
-  3. Profiling:  Process data → Generate user_profiles.json
+  2. Execution:  Choose Full/Incremental → Execute SQL/HogQL → Save interim_results/interim_results_<timestamp>.json
+  3. Profiling:  Process data + Validate/score profiles → Generate user_profiles.json
 `;
 
 function main() {

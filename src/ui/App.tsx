@@ -10,7 +10,8 @@ import { ProfilingPhase } from "./components/ProfilingPhase.tsx";
 import { CompletionScreen } from "./components/CompletionScreen.tsx";
 import { loadConfig, type Config } from "../config.js";
 import { checkExistingPlan } from "../planner.js";
-import { checkInterimResults } from "../executor.js";
+import { checkInterimResults, type ExecutionMode } from "../executor.js";
+import { readRunManifest } from "../artifacts.js";
 
 export type Phase =
 	| "setup"
@@ -34,10 +35,15 @@ export const App = () => {
 		undefined,
 	);
 	const [setupError, setSetupError] = useState<string | null>(null);
+	const [executionMode, setExecutionMode] = useState<ExecutionMode>("full");
+	const [lastExecutionCompletedAt, setLastExecutionCompletedAt] = useState<
+		string | undefined
+	>(undefined);
 	const { exit } = useApp();
 
 	const handleSetupComplete = async (setupResult: SetupResult) => {
 		try {
+			setSetupError(null);
 			const newConfig = loadConfig({
 				outputBaseDir: setupResult.outputBaseDir,
 				apiKey: setupResult.apiKey,
@@ -51,9 +57,11 @@ export const App = () => {
 			// Check for existing files
 			const existingPlanPath = await checkExistingPlan(newConfig);
 			const existingInterimPath = await checkInterimResults(newConfig);
+			const manifest = await readRunManifest(newConfig.outputDir);
 
-			if (existingPlanPath) setExistingPlan(existingPlanPath);
-			if (existingInterimPath) setExistingInterim(existingInterimPath);
+			setExistingPlan(existingPlanPath || undefined);
+			setExistingInterim(existingInterimPath || undefined);
+			setLastExecutionCompletedAt(manifest?.lastExecutionCompletedAt);
 
 			setPhase("welcome");
 		} catch (error) {
@@ -61,17 +69,35 @@ export const App = () => {
 		}
 	};
 
-	const handleWelcomeComplete = (skipToPhase?: Phase) => {
+	const handleWelcomeComplete = (options?: {
+		skipToPhase?: Phase;
+		executionMode?: ExecutionMode;
+	}) => {
+		const skipToPhase = options?.skipToPhase;
+		const selectedMode = options?.executionMode || "full";
 		if (skipToPhase) {
 			if (skipToPhase === "execution" && existingPlan) {
+				setExecutionMode(selectedMode);
 				setPlanPath(existingPlan);
+				setInterimResultsPath(undefined);
+				setPhase("execution");
+				return;
 			}
 			if (skipToPhase === "profiling") {
-				if (existingPlan) setPlanPath(existingPlan);
-				if (existingInterim) setInterimResultsPath(existingInterim);
+				if (existingPlan && existingInterim) {
+					setExecutionMode("full");
+					setPlanPath(existingPlan);
+					setInterimResultsPath(existingInterim);
+					setPhase("profiling");
+					return;
+				}
 			}
-			setPhase(skipToPhase);
+			setExecutionMode("full");
+			setPhase("planning");
 		} else {
+			setExecutionMode("full");
+			setPlanPath(undefined);
+			setInterimResultsPath(undefined);
 			setPhase("planning");
 		}
 	};
@@ -115,6 +141,7 @@ export const App = () => {
 					config={config}
 					existingPlan={existingPlan}
 					existingInterim={existingInterim}
+					lastExecutionCompletedAt={lastExecutionCompletedAt}
 					onComplete={handleWelcomeComplete}
 					onExit={handleExit}
 				/>
@@ -133,6 +160,7 @@ export const App = () => {
 				<ExecutionPhase
 					config={config}
 					planPath={planPath}
+					executionMode={executionMode}
 					onComplete={handleExecutionComplete}
 				/>
 			)}
@@ -147,7 +175,13 @@ export const App = () => {
 			)}
 
 			{phase === "complete" && config && (
-				<CompletionScreen config={config} onExit={handleExit} />
+				<CompletionScreen
+					config={config}
+					planPath={planPath}
+					interimResultsPath={interimResultsPath}
+					executionMode={executionMode}
+					onExit={handleExit}
+				/>
 			)}
 		</Box>
 	);

@@ -6,7 +6,8 @@
 	"scripts": {
 		"start": "bun run cli.tsx",
 		"dev": "bun run cli.tsx",
-		"demo": "bun run demo.tsx"
+		"typecheck": "bun x tsc --noEmit",
+		"test": "bun test"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",

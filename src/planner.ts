@@ -3,6 +3,7 @@ import path from "path";
 import type { Config } from "./config";
 import { introspectDatabase, type TableInfo } from "./db";
 import { callLLM } from "./llm";
+import { readRunManifest, updateRunManifest } from "./artifacts";
 
 const PLAN_FILE = "analysis_plan.md";
 
@@ -75,8 +76,9 @@ Please create a comprehensive analysis plan that includes:
    - Target user-related tables
    - Aggregate/transform data for profiling insights
    - Be PostgreSQL-compatible
+   - Prefer incremental-friendly filters where possible using '{{since_last_run}}' and optional '{{until_now}}' placeholders in date comparisons
    - Use \`\`\`sql blocks
-${postHogContext ? `4. **PostHog Queries**: Provide HogQL queries to extract behavioral data. Use \`\`\`hogql blocks.` : ""}
+${postHogContext ? `4. **PostHog Queries**: Provide HogQL queries to extract behavioral data. Use \`\`\`hogql blocks and prefer '{{since_last_run}}' / '{{until_now}}' placeholders for time filters when possible.` : ""}
 ${postHogContext ? "5" : "4"}. **User Profile Structure**: Define the JSON schema for the final user profiles, including:
    - Hard-coded fields (directly from query results)
    - LLM-evaluated fields (free-form insights)
@@ -92,6 +94,7 @@ Format your response as a well-structured markdown document.`;
 	const filename = customFilename || PLAN_FILE;
 	const planPath = path.join(config.outputDir, filename);
 	await fs.writeFile(planPath, planContent, "utf-8");
+	await updateRunManifest(config.outputDir, { latestPlanPath: planPath });
 
 	console.log(`✅ Analysis plan saved to: ${planPath}`);
 	return planPath;
@@ -114,11 +117,39 @@ function formatSchemaForLLM(tables: TableInfo[]): string {
 export async function checkExistingPlan(
 	config: Config,
 ): Promise<string | null> {
-	const planPath = path.join(config.outputDir, PLAN_FILE);
+	const manifest = await readRunManifest(config.outputDir);
+	if (manifest?.latestPlanPath) {
+		try {
+			await fs.access(manifest.latestPlanPath);
+			return manifest.latestPlanPath;
+		} catch {
+			// Fall back to scan if the manifest path no longer exists.
+		}
+	}
+
+	const planDir = config.outputDir;
+	const planMatcher = /^analysis_plan(?:_.+)?\.md$/;
 
 	try {
-		await fs.access(planPath);
-		return planPath;
+		const filenames = await fs.readdir(planDir);
+		const candidatePlans = filenames.filter((filename) => planMatcher.test(filename));
+		if (candidatePlans.length === 0) {
+			return null;
+		}
+
+		const planWithTimestamps = await Promise.all(
+			candidatePlans.map(async (filename) => {
+				const fullPath = path.join(planDir, filename);
+				const stats = await fs.stat(fullPath);
+				return {
+					path: fullPath,
+					mtimeMs: stats.mtimeMs,
+				};
+			}),
+		);
+
+		planWithTimestamps.sort((a, b) => b.mtimeMs - a.mtimeMs);
+		return planWithTimestamps[0]?.path || null;
 	} catch {
 		return null;
 	}
